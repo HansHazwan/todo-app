@@ -2,7 +2,13 @@ use crate::prelude::*;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Title(pub String);
+pub struct Title(String);
+
+impl Default for Title {
+    fn default() -> Title {
+        Title("Default task for testing.".to_string())
+    }
+}
 
 impl Title {
     pub fn new(title: &str) -> Result<Title> {
@@ -11,6 +17,9 @@ impl Title {
         }
 
         Ok(Title(title.to_owned()))
+    }
+    pub fn value(&self) -> String {
+        self.0.clone()
     }
 }
 

@@ -12,6 +12,15 @@ pub struct Task {
     completed: bool,
 }
 
+impl Default for Task {
+    fn default() -> Task {
+        Task {
+            title: Title::default(),
+            completed: false,
+        }
+    }
+}
+
 impl Task {
     pub fn new(title: Title) -> Task {
         Task {

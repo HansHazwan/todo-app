@@ -12,70 +12,65 @@ impl TaskManager {
     pub fn init() -> Result<TaskManager> {
         match fs::read_to_string("tasks.json") {
             Ok(content) => {
-                if content.is_empty() {
-                    let title = Title::new("Testing")?;
-                    let task = Task::new(title);
-
-                    return Ok(Self {
-                        tasks: vec![task],
-                    });
-                } else {
-                    let tasks: Vec<Task> = serde_json::from_str(&content)?;
-
-                    return Ok(Self {
-                        tasks: tasks,
-                    });
+                match serde_json::from_str::<Vec<Task>>(&content) {
+                    Ok(tasks) => return Ok(Self {
+                        tasks,
+                    }),
+                    Err(e) => return Err(Error::SerdeJson(e)),
                 }
             },
-            Err(err) => {
-                if err.kind() == ErrorKind::NotFound {
-                    let title = Title::new("Testing")?;
-                    let task = Task::new(title);
-
-                    return Ok(Self {
-                        tasks: vec![task],
-                    });
+            Err(e) => {
+                match e.kind() {
+                    ErrorKind::NotFound => {
+                        return Ok(Self {
+                            tasks: vec![Task::default()],
+                        });
+                    },
+                    _ => return Err(Error::IO(e)),
                 }
-
-                return Err(Error::IO(err));
-            },
+            }
         }
     }
     pub fn add_task(&mut self, title: Title) {
-        let task = Task::new(title);
-        self.tasks.push(task);
+        self.tasks.push(Task::new(title));
     }
     pub fn remove_task(&mut self, index: usize) -> Result<()> {
-        if index > self.tasks.len() {
-            return Err(Error::Static("Invalid Index".to_string()));
+        if let None = self.tasks.get(index) {
+            return Err(Error::Static("The index is undefined".to_string()));
+        } else {
+            self.tasks.remove(index);
+            return Ok(());
         }
-
-        self.tasks.remove(index);
-        Ok(())
     }
     pub fn edit_task(&mut self, index: usize, title: Title) -> Result<()> {
-        match self.tasks.get_mut(index) {
-            Some(value) => {
-                value.edit(title);
-                Ok(())
-            },
-            None => Err(Error::Static("Invalid Index".to_string())),
+        if let Some(task) = self.tasks.get_mut(index) {
+            task.edit(title);
+            return Ok(());
+        } else {
+            return Err(Error::Static("The index is undefined".to_string()));
         }
     }
     pub fn mark_task(&mut self, index: usize) -> Result<()> {
-        match self.tasks.get_mut(index) {
-            Some(value) => {
-                value.mark();
-                Ok(())
-            },
-            None => Err(Error::Static("Invalid Index".to_string())),
+        if let Some(task) = self.tasks.get_mut(index) {
+            task.mark();
+            return Ok(());
+        } else {
+            return Err(Error::Static("The index is undefined".to_string()));
+        }
+    }
+    pub fn print_tasks(&self) {
+        for (i, e) in self.tasks.iter().enumerate() {
+            println!("------------------------------------------");
+            println!("ID        : {}", i);
+            println!("Title     : {}", e.title().value());
+            println!("Completed : {}", e.completed());
+            println!("------------------------------------------");
         }
     }
     pub fn close(&self) -> Result<()> {
         let mut file = File::create("tasks.json")?;
-        let json_content = serde_json::to_string(&self.tasks)?;
-        file.write_all(json_content.as_bytes())?;
-
+        let content = serde_json::to_string(&self.tasks)?;
+        file.write_all(content.as_bytes())?;
         Ok(())
     }
 }
