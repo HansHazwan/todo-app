@@ -5,6 +5,7 @@ mod displayer;
 
 use crate::prelude::*;
 use crate::task_manager::{Title, TaskManager};
+use std::io::{self, Write};
 
 fn main() -> Result<()> {
     let mut task_manager = TaskManager::init()?;
@@ -33,14 +34,17 @@ fn main() -> Result<()> {
                 let id = displayer::get_id();
                 task_manager.mark_task(id)?;
             },
-            5 => {
-                task_manager.print_tasks();
-            },
-            6 => {
-                running = false;
-            },
+            5 => task_manager.print_tasks(),
+            6 => running = false,
             _ => todo!(),
         }
+
+        println!("Press any button");
+        let mut buffer = String::new();
+        std::io::stdin().read_line(&mut buffer).expect("Cannot read line");
+
+        print!("\x1B[2J\x1B[H");
+        std::io::stdout().flush().unwrap();
 
         if !running {
             break;
